@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+import rospy
+import serial
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+import numpy as np
+
+# Initialize Serial Communication with ESP32
+esp32 = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+
+# SLAM and Localization Parameters
+def odometry_callback(data):
+    global robot_position
+    robot_position = (data.pose.pose.position.x, data.pose.pose.position.y)
+
+# Path Planning Using A* Algorithm
+def plan_path(goal_x, goal_y):
+    rospy.loginfo(f"Planning path to ({goal_x}, {goal_y})")
+    # A* Algorithm logic (simplified)
+    path = [(robot_position[0] + 1, robot_position[1] + 1), (goal_x, goal_y)]
+    return path
+
+# Movement Commands to ESP32
+def send_command(command):
+    esp32.write(command.encode())
+    rospy.sleep(0.1)
+
+# Robot Control Loop
+def move_to_goal(goal_x, goal_y):
+    path = plan_path(goal_x, goal_y)
+    for point in path:
+        rospy.loginfo(f"Moving to: {point}")
+        send_command("F")  # Send Forward Command to ESP32
+        rospy.sleep(2)
+    send_command("S")  # Stop Motors
+
+# Main ROS Node
+if __name__ == "__main__":
+    rospy.init_node("autonomous_navigation")
+    rospy.Subscriber("/odom", Odometry, odometry_callback)
+    move_to_goal(5, 5)  # Example goal coordinates
+    rospy.spin()
