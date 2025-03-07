@@ -1,0 +1,86 @@
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+#include <Ultrasonic.h>
+
+// Blynk Authentication
+#define BLYNK_TEMPLATE_ID "YOUR_TEMPLATE_ID"
+#define BLYNK_DEVICE_NAME "Navigation Robot"
+#define BLYNK_AUTH_TOKEN "YOUR_BLYNK_AUTH_TOKEN"
+
+// Wi-Fi Credentials
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
+
+// Motor Driver Pins (L298N)
+#define MOTOR1_ENA 13
+#define MOTOR1_IN1 12
+#define MOTOR1_IN2 14
+#define MOTOR2_ENB 27
+#define MOTOR2_IN3 26
+#define MOTOR2_IN4 25
+
+// Ultrasonic Sensors for Obstacle Detection
+Ultrasonic frontSensor(32, 33); // (Trigger, Echo)
+
+// Movement Functions
+void moveForward() {
+  digitalWrite(MOTOR1_IN1, HIGH);
+  digitalWrite(MOTOR1_IN2, LOW);
+  digitalWrite(MOTOR2_IN3, HIGH);
+  digitalWrite(MOTOR2_IN4, LOW);
+}
+
+void moveBackward() {
+  digitalWrite(MOTOR1_IN1, LOW);
+  digitalWrite(MOTOR1_IN2, HIGH);
+  digitalWrite(MOTOR2_IN3, LOW);
+  digitalWrite(MOTOR2_IN4, HIGH);
+}
+
+void stopMotors() {
+  digitalWrite(MOTOR1_IN1, LOW);
+  digitalWrite(MOTOR1_IN2, LOW);
+  digitalWrite(MOTOR2_IN3, LOW);
+  digitalWrite(MOTOR2_IN4, LOW);
+}
+
+// Obstacle Avoidance
+void obstacleAvoidance() {
+  int distance = frontSensor.read();
+  if (distance < 20) { // If an obstacle is detected within 20cm
+    stopMotors();
+    delay(500);
+    moveBackward();
+    delay(1000);
+    stopMotors();
+  }
+}
+
+// Blynk Virtual Pin Control
+BLYNK_WRITE(V1) {
+  int command = param.asInt();
+  if (command == 1) moveForward();
+  else if (command == 2) moveBackward();
+  else stopMotors();
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Motor Pins Setup
+  pinMode(MOTOR1_ENA, OUTPUT);
+  pinMode(MOTOR1_IN1, OUTPUT);
+  pinMode(MOTOR1_IN2, OUTPUT);
+  pinMode(MOTOR2_ENB, OUTPUT);
+  pinMode(MOTOR2_IN3, OUTPUT);
+  pinMode(MOTOR2_IN4, OUTPUT);
+  
+  // Wi-Fi & Blynk Initialization
+  WiFi.begin(ssid, pass);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+}
+
+void loop() {
+  Blynk.run();
+  obstacleAvoidance();
+}
