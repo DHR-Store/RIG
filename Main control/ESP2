@@ -1,0 +1,59 @@
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+
+#define TRIG 5
+#define ECHO 18
+#define MOTOR1 25
+#define MOTOR2 26
+#define TOUCH_PIN 14
+#define BUZZER 27
+
+char auth[] = "YOUR_BLYNK_AUTH_TOKEN";
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, pass);
+  Blynk.begin(auth, ssid, pass);
+
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+  pinMode(MOTOR1, OUTPUT);
+  pinMode(MOTOR2, OUTPUT);
+  pinMode(TOUCH_PIN, INPUT);
+  pinMode(BUZZER, OUTPUT);
+}
+
+void loop() {
+  long duration;
+  int distance;
+  
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+  
+  duration = pulseIn(ECHO, HIGH);
+  distance = duration * 0.034 / 2;
+
+  if (distance < 30) {
+    digitalWrite(MOTOR1, LOW);
+    digitalWrite(MOTOR2, LOW);
+    digitalWrite(BUZZER, HIGH);
+  } else {
+    digitalWrite(MOTOR1, HIGH);
+    digitalWrite(MOTOR2, HIGH);
+    digitalWrite(BUZZER, LOW);
+  }
+  
+  int touchState = digitalRead(TOUCH_PIN);
+  if (touchState == HIGH) {
+    digitalWrite(BUZZER, HIGH);
+  } else {
+    digitalWrite(BUZZER, LOW);
+  }
+  
+  Blynk.run();
+}
